@@ -1,0 +1,366 @@
+---
+title: "1853-1859 Fairfax Death Records"
+output:
+  pdf_document: default
+  html_document: default
+date: ""
+---
+```{r}
+setwd("~/Downloads")
+data = read.csv("Deaths_Fairfax_Clean.csv")
+```
+
+```{r}
+library(dplyr)
+library(knitr)
+
+data = data %>% 
+  filter(1853 <= Year & Year <= 1859)
+
+data %>% 
+  group_by(Sex.of.Deceased..Female.or.Male.) %>% 
+  summarise("%" = round(n()/nrow(data)*100,2), "Count" = n()) %>% 
+  kable()
+
+data %>% 
+  group_by(Status.of.Deceased..Free.or.Slave.) %>% 
+  summarise("%" = round(n()/nrow(data)*100,2), "Count" = n())%>% 
+  kable()
+
+data %>% 
+  group_by(Race..Colored.or.White.) %>% 
+  summarise("%" = round(n()/nrow(data)*100,2), "Count" = n())%>% 
+  kable()
+
+free_colored = data %>% 
+  filter(Race..Colored.or.White. == "Colored") %>% 
+  filter(Status.of.Deceased..Free.or.Slave. == "Free")
+
+free_colored %>% 
+  summarise("Colored Free #" = n(), "Colored Free %" = round(n()/nrow(data)*100,2))%>% 
+  kable()
+
+slaves = data %>% 
+  filter(Status.of.Deceased..Free.or.Slave. == "Slave")
+
+slaves_d = slaves %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Slave_Death_Cause_(%)" = round(n()/nrow(slaves)*100,2), "Count" = n()) %>% 
+  data_frame()
+
+kable(head(slaves_d[order(slaves_d$`Slave_Death_Cause_(%)`, decreasing = T),],10))
+
+free = data %>% 
+  filter(Status.of.Deceased..Free.or.Slave. == "Free")
+
+free_d = free %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Free_Death_Cause_(%)" = round(n()/nrow(free)*100,2), "Count" = n()) %>% 
+  data_frame()
+
+kable(head(free_d[order(free_d$`Free_Death_Cause_(%)`, decreasing = T),],10))
+
+colored = data %>% 
+  filter(Race..Colored.or.White. == "Colored")
+
+colored_d = colored %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Colored Death Cause (%)" = round(n()/nrow(colored)*100,2), "Count" = n())
+
+kable(head(colored_d[order(colored_d$`Colored Death Cause (%)`, decreasing = T),],10))
+
+white = data %>% 
+  filter(Race..Colored.or.White. == "White")
+
+white_d = white %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("White Death Cause (%)" = round(n()/nrow(white)*100,2), "Count" = n())
+
+kable(head(white_d[order(white_d$`White Death Cause (%)`, decreasing = T),],10))
+```
+
+```{r}
+slaves_1 = free %>%
+  filter(TOTAL.AGE != 0) %>% 
+  filter( 1 <= TOTAL.AGE &TOTAL.AGE < 10)
+
+slaves_1 %>% 
+  summarise("%" = round(n()/nrow(free)*100,2))
+```
+
+```{r}
+library(ggplot2)
+
+ages = data %>% 
+  filter(TOTAL.AGE != "0") %>% 
+  filter(Status.of.Deceased..Free.or.Slave. != "" )
+
+ggplot(data = ages, mapping = aes(x = as.numeric(TOTAL.AGE), group = Status.of.Deceased..Free.or.Slave.))+
+  geom_density(aes(color = Status.of.Deceased..Free.or.Slave.,
+                   linetype =Status.of.Deceased..Free.or.Slave. ))+
+  theme(panel.background = element_blank(),panel.grid.major = element_line(color = "#D3D3D3", alpha(0.5)))+
+  scale_color_manual(name = "Status", values = c("#EF7C28","#0218A3"),
+                     labels = c("Slave", "Free"), breaks = c("Slave","Free")) +
+  ggtitle("Density Distribution of Age at Death") +
+  theme(plot.title = element_text(hjust = 0.5))+
+  labs(x = "Age in Years", y = "Density")+
+  scale_linetype_manual(values = c("solid","twodash"), name = "Status",
+                        labels = c("Slave", "Free"),breaks = c("Slave","Free"))
+```
+```{r}
+ages = data %>% 
+  filter(TOTAL.AGE != "0") %>% 
+  filter(Race..Colored.or.White. != "" )
+
+ggplot(data = ages, mapping = aes(x = as.numeric(TOTAL.AGE), colour =Race..Colored.or.White.))+
+  geom_density()+scale_color_manual(values = c("#F9380F", "#0F2BF9"))
+```
+
+```{r}
+
+slave_child = slaves %>% 
+  filter(20 <= TOTAL.AGE)
+
+
+ch_slaves_d = slave_child %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Slave_Child_Death_Cause_(%)" = round(n()/nrow(slave_child)*100,2), "Count" = n()) %>% 
+  data_frame()
+
+kable(head(ch_slaves_d[order(ch_slaves_d$`Slave_Child_Death_Cause_(%)`, decreasing = T),],10))
+```
+
+```{r}
+free_child = free %>% 
+  filter(20 <= TOTAL.AGE)
+
+
+ch_free_d = free_child %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Free_Child_Death_Cause_(%)" = round(n()/nrow(free_child)*100,2), "Count" = n()) %>% 
+  data_frame()
+
+kable(head(ch_free_d[order(ch_free_d$`Free_Child_Death_Cause_(%)`, decreasing = T),],10))
+
+```
+
+
+
+```{r}
+slave_adult = slaves %>% 
+  filter(TOTAL.AGE >= 18)
+
+
+ad_slave_d = slave_adult %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Slave_Adult_Death_Cause_(%)" = round(n()/nrow(slave_adult)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_slave_d[order(ad_slave_d$`Slave_Adult_Death_Cause_(%)`, decreasing = T),],10))
+
+colored_adult = colored %>% 
+  filter(TOTAL.AGE >= 18)
+
+
+ad_colored_d = colored_adult %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Colored_Adult_Death_Cause_(%)" = round(n()/nrow(colored_adult)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_colored_d[order(ad_colored_d$`Colored_Adult_Death_Cause_(%)`, decreasing = T),],10))
+
+```
+
+```{r}
+free_adult = free %>% 
+  filter(TOTAL.AGE >= 18) 
+
+
+ad_free_d = free_adult %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Free_Adult_Death_Cause_(%)" = round(n()/nrow(free_adult)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_free_d[order(ad_free_d$`Free_Adult_Death_Cause_(%)`, decreasing = T),],10))
+
+white_adult = white %>% 
+  filter(TOTAL.AGE >= 18)
+
+
+ad_white_d = white_adult %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("White_Adult_Death_Cause_(%)" = round(n()/nrow(white_adult)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_white_d[order(ad_white_d$`White_Adult_Death_Cause_(%)`, decreasing = T),],10))
+
+```
+
+```{r}
+slave_adult_women = slaves %>% 
+  filter(Sex.of.Deceased..Female.or.Male. == "Female") %>% 
+  filter(TOTAL.AGE >= 18)
+  
+ad_slave_women = slave_adult_women %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Slave Adult Women Cause (%)" = round(n()/nrow(slave_adult_women)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_slave_women[order(ad_slave_women$`Slave Adult Women Cause (%)`, decreasing = T),],10))
+
+
+Colored_adult_women = colored %>% 
+  filter(Sex.of.Deceased..Female.or.Male. == "Female") %>% 
+  filter(TOTAL.AGE >= 18)
+  
+ad_colored_women = Colored_adult_women %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Colored Adult Women Cause (%)" = round(n()/nrow(Colored_adult_women)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_colored_women[order(ad_colored_women$`Colored Adult Women Cause (%)`, decreasing = T),],10))
+
+```
+
+```{r}
+free_adult_women = free %>% 
+  filter(Sex.of.Deceased..Female.or.Male. == "Female") %>% 
+  filter(TOTAL.AGE >= 18)
+  
+ad_free_women = free_adult_women %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Free Adult Women Cause (%)" = round(n()/nrow(free_adult_women)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_free_women[order(ad_free_women$`Free Adult Women Cause (%)`, decreasing = T),],10))
+
+
+White_adult_women = white %>% 
+  filter(Sex.of.Deceased..Female.or.Male. == "Female") %>% 
+  filter(TOTAL.AGE >= 18)
+  
+ad_white_women = White_adult_women %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("White Adult Women Cause (%)" = round(n()/nrow(White_adult_women)*100,2)) %>% 
+  data_frame()
+
+kable(head(ad_white_women[order(ad_white_women$`White Adult Women Cause (%)`, decreasing = T),],10))
+```
+
+
+
+```{r}
+slaves = slaves %>% 
+  mutate(age_group = case_when(
+    TOTAL.AGE < 1 ~ "Infant",
+    TOTAL.AGE >= 1 & TOTAL.AGE <10 ~ "Child",
+    TOTAL.AGE >= 10 & TOTAL.AGE < 19 ~ "Teen",
+    TOTAL.AGE >= 19 ~ "Adult"
+  ))
+
+slave_age_groups = slaves %>% 
+  group_by(age_group) %>% 
+  summarise("% of age group slaves" = round(n()/nrow(slaves)*100,2))
+
+slave_age_groups
+
+```
+
+```{r}
+
+slave_inf = slaves %>% 
+  filter(age_group == "Infant")
+
+ad_slave_inf = slave_inf %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Slave Infant Cause (%)" = round(n()/nrow(slave_inf)*100,2), "Count" = n()) %>% 
+  data_frame()
+
+head(ad_slave_inf[order(ad_slave_inf$`Slave Infant Cause (%)`, decreasing = T),],10)
+
+```
+
+```{r}
+white = white %>% 
+  mutate(age_group = case_when(
+    TOTAL.AGE < 1 ~ "Infant",
+    TOTAL.AGE >= 1 & TOTAL.AGE <10 ~ "Child",
+    TOTAL.AGE >= 10 & TOTAL.AGE < 19 ~ "Teen",
+    TOTAL.AGE >= 19 ~ "Adult"
+  ))
+
+white_age_groups = white %>% 
+  group_by(age_group) %>% 
+  summarise("% of age group whites" = round(n()/nrow(white)*100,2))
+
+white_age_groups
+```
+
+```{r}
+
+white_inf = white %>% 
+  filter(age_group == "Infant")
+
+ad_white_inf = white_inf %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("White Infant Cause (%)" = round(n()/nrow(white_inf)*100,2), "Count" = n()) %>% 
+  data_frame()
+
+head(ad_white_inf[order(ad_white_inf$`White Infant Cause (%)`, decreasing = T),],10)
+
+```
+
+```{r}
+slave_child = slaves %>% 
+  filter(TOTAL.AGE <= 5)
+
+nrow(slave_child)/nrow(slaves)*100
+
+
+ch_slaves_d = slave_child %>% 
+  group_by(Cause.of.Death..imputed.) %>% 
+  summarise("Slave_Child_Death_Cause_(%)" = round(n()/nrow(slave_child)*100,2), "Count" = n()) %>% 
+  data_frame()
+
+kable(head(ch_slaves_d[order(ch_slaves_d$`Slave_Child_Death_Cause_(%)`, decreasing = T),],10))
+```
+
+```{r}
+
+library(ggplot2)
+
+boxp = data %>% 
+  filter(Status.of.Deceased..Free.or.Slave. == "Free" |Status.of.Deceased..Free.or.Slave. == "Slave" )
+
+ggplot(data = boxp, mapping = aes(y = Status.of.Deceased..Free.or.Slave., x = TOTAL.AGE, fill = Status.of.Deceased..Free.or.Slave.)) +
+  geom_boxplot(show.legend = FALSE, alpha = 0.85)+
+  labs(y = "Status", x = "Age in Years") +
+  ggtitle("Age at Death") +
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(text = element_text(size = 14))+
+  theme(panel.background = element_blank(),panel.grid.major = element_line(color = "#D3D3D3"))+
+  scale_x_continuous(breaks = seq(0, 100, by = 5))+
+  scale_fill_manual(values = c("#0218A3","#EF7C28") )
+
+```
+
+```{r}
+data %>% 
+  filter(Status.of.Deceased..Free.or.Slave. == "Free" | Status.of.Deceased..Free.or.Slave. == "Slave") %>% 
+  group_by(Status.of.Deceased..Free.or.Slave.) %>%
+  filter(!is.na(TOTAL.AGE)) %>% 
+  summarise("Mean" = round(mean(TOTAL.AGE),2), "Median" = round(median(TOTAL.AGE),2) )
+
+data %>% 
+  filter(Race..Colored.or.White. == "White" | Race..Colored.or.White. == "Colored") %>% 
+  group_by(Race..Colored.or.White.) %>%
+  filter(!is.na(TOTAL.AGE)) %>% 
+  summarise("Mean" = round(mean(TOTAL.AGE),2), "Median" = round(median(TOTAL.AGE),2) )
+```
+
+
+
+
+
+
+
